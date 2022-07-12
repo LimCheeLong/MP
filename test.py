@@ -61,4 +61,4 @@ button2 = customtkinter.CTkButton(master=root,
 button2.place(relx=0.68, rely=0.37, anchor=tkinter.CENTER)
 
 if __name__ == "__main__":
-    root.mainloop(
+    root.mainloop()
