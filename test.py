@@ -1,9 +1,51 @@
 import tkinter
 import tkinter.messagebox
 import customtkinter
-import pandas as pd
 import datetime
-import arraytest
+import time
+import sys
+import ast
+import os, signal
+from os import system
+import subprocess
+import testing
+from testing import live
+import trace
+import threading
+import servomotortest
+
+class thread_with_trace(threading.Thread):
+  def __init__(self, *args, **keywords):
+    threading.Thread.__init__(self, *args, **keywords)
+    self.killed = False
+ 
+  def start(self):
+      try:
+          self.__run_backup = self.run
+          self.run = self.__run     
+          threading.Thread.start(self)
+      except SensorNotReadyError:
+          print("error")
+ 
+  def __run(self):
+    sys.settrace(self.globaltrace)
+    self.__run_backup()
+    self.run = self.__run_backup
+ 
+  def globaltrace(self, frame, event, arg):
+    if event == 'call':
+      return self.localtrace
+    else:
+      return None
+ 
+  def localtrace(self, frame, event, arg):
+    if self.killed:
+      if event == 'line':
+        raise SystemExit()
+    return self.localtrace
+ 
+  def kill(self):
+    self.killed = True
 
 customtkinter.set_appearance_mode("dark")
 
@@ -16,68 +58,130 @@ number = [26.5,27.0,26.7,24.0,25.0,26.0,27.0,26.0,26.7,26.8]
 
 #Temperature Reading
 lab1 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = "Tray 01",text_font=("Roboto Medium","16"),text_color=("black"))
-temp1 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = str(number[0])+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
 lab2 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = "Tray 02",text_font=("Roboto Medium","16"),text_color=("black"))
-temp2 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = str(number[1])+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
 lab3 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = "Tray 03",text_font=("Roboto Medium","16"),text_color=("black"))
-temp3 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = str(number[2])+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
 lab4 = customtkinter.CTkLabel(master=root,width=25,height=40,fg_color=("light blue"),corner_radius=10,text = "Tray 04",text_font=("Roboto Medium","16"),text_color=("black"))
-temp4 = customtkinter.CTkLabel(master=root,width=50,height=40,fg_color=("light blue"),corner_radius=10,text = str(number[3])+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
 lab5 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = "Tray 05",text_font=("Roboto Medium","16"),text_color=("black"))
-temp5 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = str(number[4])+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
-
 lab6 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = "Tray 06",text_font=("Roboto Medium","16"),text_color=("black"))
-temp6 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = str(number[5])+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
 lab7 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = "Tray 07",text_font=("Roboto Medium","16"),text_color=("black"))
-temp7 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = str(number[6])+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
 lab8 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = "Tray 08",text_font=("Roboto Medium","16"),text_color=("black"))
-temp8 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = str(number[7])+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
 lab9 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = "Tray 09",text_font=("Roboto Medium","16"),text_color=("black"))
-temp9 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = str(number[8])+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
 lab10 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = "Tray 10",text_font=("Roboto Medium","16"),text_color=("black"))
-temp10 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("light blue"),corner_radius=10,text = str(number[9])+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
 
-for i in range(10):
-    if number[i] == 26.7:
-        globals()[f"temp{i+1}"] = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("green"),corner_radius=10,text = str(number[i])+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
-    elif number[i] >= 26.8:
-        globals()[f"temp{i+1}"] = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("red"),corner_radius=10,text = str(number[i])+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
-    elif number[i] <= 26.6:
-        globals()[f"temp{i+1}"] = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("blue"),corner_radius=10,text = str(number[i])+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
-        
+temp1 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("blue"),corner_radius=10,text = str(0)+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
+temp2 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("blue"),corner_radius=10,text = str(0)+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
+temp3 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("blue"),corner_radius=10,text = str(0)+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
+temp4 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("blue"),corner_radius=10,text = str(0)+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
+temp5 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("blue"),corner_radius=10,text = str(0)+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
+temp6 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("blue"),corner_radius=10,text = str(0)+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
+temp7 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("blue"),corner_radius=10,text = str(0)+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
+temp8 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("blue"),corner_radius=10,text = str(0)+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
+temp9 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("blue"),corner_radius=10,text = str(0)+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
+temp10 = customtkinter.CTkLabel(master=root,width=20,height=40,fg_color=("blue"),corner_radius=10,text = str(0)+"°C",text_font=("Roboto Medium","16"),text_color=("black"))
+
 #Functions()
+global process
+process = 0
+global switch
+switch = 0
 def Measure():
-    #time.sleep(5)
-    print("measuring")
+    try:
+        global process
+        global liveprocess
+        process = thread_with_trace(target = testing.func)
+        liveprocess = thread_with_trace(target = live)
+        process.start()
+        liveprocess.start()
+        global switch
+        switch = 1
+        if switch == 1:
+            button1.place_forget()
+            button2.place(relx=0.32, rely=0.37, anchor=tkinter.CENTER)
+    except:
+        print("Something went wrong")
         
-def Tilt():
-    print("tilting")
+def StopMeasure():
+    #os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+    process.kill()
+    #liveprocess.kill()
+    process.join()
+    #liveprocess.join()
+    
+    global switch
+    switch = 0
+    if switch == 0:
+        button2.place_forget()
+        button1.place(relx=0.32, rely=0.37, anchor=tkinter.CENTER)
+        
+    print("Measurement has been halted")
 
+def live():
+    while(1):
+        #time.sleep(5)
+        for i in range(10):
+                #print("this is", i)
+            if testing.live[i] == 26.7 and len(testing.live) == 10:
+                #print("tray ", i+1, "at temperature : ",testing.live[i], ", is green")
+                globals()['temp%s'%str(i+1)].configure(fg_color=("green"),text = str(testing.live[i])+"°C")
+                    
+            elif testing.live[i] >= 26.8 and len(testing.live) == 10:
+                globals()['temp%s'% str(i+1)].configure(fg_color=("red"),text = str(testing.live[i])+"°C")
+                    
+            elif testing.live[i] <= 26.6 and len(testing.live) == 10:
+                globals()['temp%s'%str(i+1)].configure(fg_color=("blue"),text = str(testing.live[i])+"°C")
+            
+            else:
+                print("nothing changed")
+        #time.sleep(5)
+
+global tilt
+tilt = 0
+def Tilt():
+    servomotortest.tilt()
+    global tilt
+    tilt = 1
+    if tilt == 1:
+        button3.place_forget()
+        button4.place(relx=0.68, rely=0.37, anchor=tkinter.CENTER)
+
+def Untilt():
+    servomotortest.untilt()
+    global tilt
+    tilt = 0
+    if tilt == 0:
+        button4.place_forget()
+        button3.place(relx=0.68, rely=0.37, anchor=tkinter.CENTER)
+        
 def optionmenu(choice):
     if choice == "Temperature Reading":
+        #output = subprocess.check_output('python3', 'cloud.py', shell=True)
+        #live = ast.literal_eval(output.decode("ascii"))
+        #print(live)
         label1.place_forget()
         button1.place_forget()
         button2.place_forget()
-        lab1.place(relx=0.1, rely=0.01, anchor=tkinter.N)
-        temp1.place(relx=0.25, rely=0.01, anchor=tkinter.N)
-        lab2.place(relx=0.1, rely=0.15, anchor=tkinter.N)
-        temp2.place(relx=0.25, rely=0.15, anchor=tkinter.N)
-        lab3.place(relx=0.1, rely=0.30, anchor=tkinter.N)
-        temp3.place(relx=0.25, rely=0.30, anchor=tkinter.N)
-        lab4.place(relx=0.1, rely=0.45, anchor=tkinter.N)
-        temp4.place(relx=0.25, rely=0.45, anchor=tkinter.N)
-        lab5.place(relx=0.1, rely=0.60, anchor=tkinter.N)
-        temp5.place(relx=0.25, rely=0.60, anchor=tkinter.N)
-        lab6.place(relx=0.58, rely=0.01, anchor=tkinter.N)
-        temp6.place(relx=0.83, rely=0.01, anchor=tkinter.N)
-        lab7.place(relx=0.58, rely=0.15, anchor=tkinter.N)
-        temp7.place(relx=0.83, rely=0.15, anchor=tkinter.N)
-        lab8.place(relx=0.58, rely=0.30, anchor=tkinter.N)
-        temp8.place(relx=0.83, rely=0.30, anchor=tkinter.N)
-        lab9.place(relx=0.58, rely=0.45, anchor=tkinter.N)
-        temp9.place(relx=0.83, rely=0.45, anchor=tkinter.N)
-        lab10.place(relx=0.58, rely=0.60, anchor=tkinter.N)
-        temp10.place(relx=0.83, rely=0.60, anchor=tkinter.N)
+        button3.place_forget()
+        button4.place_forget()
+        lab1.place(relx=0.15, rely=0.01, anchor=tkinter.N)
+        temp1.place(relx=0.30, rely=0.01, anchor=tkinter.N)
+        lab2.place(relx=0.15, rely=0.15, anchor=tkinter.N)
+        temp2.place(relx=0.30, rely=0.15, anchor=tkinter.N)
+        lab3.place(relx=0.15, rely=0.30, anchor=tkinter.N)
+        temp3.place(relx=0.30, rely=0.30, anchor=tkinter.N)
+        lab4.place(relx=0.15, rely=0.45, anchor=tkinter.N)
+        temp4.place(relx=0.30, rely=0.45, anchor=tkinter.N)
+        lab5.place(relx=0.15, rely=0.60, anchor=tkinter.N)
+        temp5.place(relx=0.30, rely=0.60, anchor=tkinter.N)
+        lab6.place(relx=0.63, rely=0.01, anchor=tkinter.N)
+        temp6.place(relx=0.78, rely=0.01, anchor=tkinter.N)
+        lab7.place(relx=0.63, rely=0.15, anchor=tkinter.N)
+        temp7.place(relx=0.78, rely=0.15, anchor=tkinter.N)
+        lab8.place(relx=0.63, rely=0.30, anchor=tkinter.N)
+        temp8.place(relx=0.78, rely=0.30, anchor=tkinter.N)
+        lab9.place(relx=0.63, rely=0.45, anchor=tkinter.N)
+        temp9.place(relx=0.78, rely=0.45, anchor=tkinter.N)
+        lab10.place(relx=0.63, rely=0.60, anchor=tkinter.N)
+        temp10.place(relx=0.78, rely=0.60, anchor=tkinter.N)
     else:
         label1.place(relx=0.5, rely=0.01, anchor=tkinter.N)
         lab1.place_forget()
@@ -100,8 +204,14 @@ def optionmenu(choice):
         temp8.place_forget()
         temp9.place_forget()
         temp10.place_forget()
-        button1.place(relx=0.32, rely=0.37, anchor=tkinter.CENTER)
-        button2.place(relx=0.68, rely=0.37, anchor=tkinter.CENTER)
+        if switch == 0:
+            button1.place(relx=0.32, rely=0.37, anchor=tkinter.CENTER)
+        else:
+            button2.place(relx=0.32, rely=0.37, anchor=tkinter.CENTER)
+        if tilt == 0:
+            button3.place(relx=0.68, rely=0.37, anchor=tkinter.CENTER)
+        else:
+            button4.place(relx=0.68, rely=0.37, anchor=tkinter.CENTER)
 
 
 #clock
@@ -141,8 +251,21 @@ button1 = customtkinter.CTkButton(master=root,
                                  command=Measure)
 button1.place(relx=0.32, rely=0.37, anchor=tkinter.CENTER)
 
-#Tilt Button
+#Stop Button
 button2 = customtkinter.CTkButton(master=root,
+                                 width=220,
+                                 height=90,
+                                 fg_color=("white", "light blue"),
+                                 border_width=2,
+                                 corner_radius=10,
+                                 text="Stop",
+                                 text_font=("Roboto Medium","24"),
+                                 text_color=("black"),
+                                 command=StopMeasure)
+#button2.place(relx=0.32, rely=0.37, anchor=tkinter.CENTER)
+
+#Tilt Button
+button3 = customtkinter.CTkButton(master=root,
                                  width=220,
                                  height=90,
                                  fg_color=("white", "light blue"),
@@ -152,7 +275,20 @@ button2 = customtkinter.CTkButton(master=root,
                                  text_font=("Roboto Medium","24"),
                                  text_color=("black"),
                                  command=Tilt)
-button2.place(relx=0.68, rely=0.37, anchor=tkinter.CENTER)
+button3.place(relx=0.68, rely=0.37, anchor=tkinter.CENTER)
+
+#Untilt Button
+button4 = customtkinter.CTkButton(master=root,
+                                 width=220,
+                                 height=90,
+                                 fg_color=("white", "light blue"),
+                                 border_width=2,
+                                 corner_radius=10,
+                                 text="Untilt",
+                                 text_font=("Roboto Medium","24"),
+                                 text_color=("black"),
+                                 command=Untilt)
+#button2.place(relx=0.32, rely=0.37, anchor=tkinter.CENTER)
 
 #OptionMenu for View between controls and Temperature
 optionmenu = customtkinter.CTkOptionMenu(master=root,
@@ -164,14 +300,11 @@ optionmenu = customtkinter.CTkOptionMenu(master=root,
                                        text_color=("black"),
                                        values=["Controls", "Temperature Reading"],
                                        command=optionmenu)
-optionmenu.place(relx=0.5, rely=0.9, anchor=tkinter.CENTER)
+optionmenu.place(relx=0.5, rely=0.82, anchor=tkinter.CENTER)
 optionmenu.set("Controls")  # set initial value
 
-#Temperature Reading
-df = pd.DataFrame({
-    "Tray": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
-    "Temperature": arraytest.temperature
-})
-
 if __name__ == "__main__":
-    root.mainloop()
+     root.mainloop()
+
+
+
