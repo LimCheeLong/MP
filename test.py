@@ -307,4 +307,18 @@ if __name__ == "__main__":
      root.mainloop()
 
 
-
+Exception in thread Thread-1:
+Traceback (most recent call last):
+  File "/usr/lib/python3.7/threading.py", line 917, in _bootstrap_inner
+    self.run()
+  File "/home/pi/Desktop/MP/tkintertest.py", line 32, in __run
+    self.__run_backup()
+  File "/usr/lib/python3.7/threading.py", line 865, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/pi/Desktop/MP/testing.py", line 77, in func
+    calibratedval = sensor.get_temperature() + reference[x]
+  File "/usr/local/lib/python3.7/dist-packages/w1thermsensor/core.py", line 267, in get_temperature
+    raw_temperature_line = self.get_raw_sensor_strings()[1]
+  File "/usr/local/lib/python3.7/dist-packages/w1thermsensor/core.py", line 250, in get_raw_sensor_strings
+    raise SensorNotReadyError(self)
+w1thermsensor.errors.SensorNotReadyError: Sensor 3c01f096fcdd is not yet ready to read temperature
