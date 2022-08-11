@@ -339,3 +339,129 @@ optionmenu.set("Controls")  # set initial value
 
 if __name__ == "__main__":
      root.mainloop()
+
+    
+    -----------------------------------------------------------------------------------------------------------------------------
+live = [0,0,0,0,0,0,0,0,0,0]
+fake = [0,0,0,0,0,0,0,0,0,0]
+error2 = 0
+#      [tray8,tray9,tray7,tray1,tray2,tray10,tray3,tray4,tray5,tray6]
+high = [99.87, 99.56, 99.37, 99.12, 98.50, 99.56, 99.75, 99.56, 99.31, 99.50]
+low =  [0.5, 0.76, 0.94, 0.81, 0.12, 0.50, 0.69, 1.00, 0.47, 0.94]
+
+def calibrate(high,low,rawval):
+    RawHigh = high
+    RawLow = low
+    ReferenceHigh = 99.9
+    ReferenceLow = 0
+    RawRange = RawHigh - RawLow
+    ReferenceRange = ReferenceHigh - ReferenceLow
+    CorrectedValue = (((rawval - RawLow)*ReferenceRange)/RawRange) +ReferenceLow
+    return CorrectedValue
+
+
+
+def func():
+    try:
+        import numpy as np
+        import time
+        from datetime import datetime
+        from w1thermsensor import W1ThermSensor
+        import influxdb_client
+        from influxdb_client.client.write_api import SYNCHRONOUS
+        import ipaddress
+        import socket
+        import sys
+        import os
+        from ast import literal_eval
+        import numpy as np
+        global live
+        global error2
+
+        bucket ="Temperature1"
+        org = "MPPROJECT"
+        token = "KoR0P-djwq0OVBTURuhmOW0tmuQaEseEGU15QEQ-jes7h_EtBNVIKLvzaBdaI_vEfY8i4gqXBNXI5Uw_ObnA_g=="
+        url = "https://ap-southeast-2-1.aws.cloud2.influxdata.com"
+        client = influxdb_client.InfluxDBClient(url=url,token=token,org=org)
+        write_api = client.write_api(write_options=SYNCHRONOUS)
+        sensor = W1ThermSensor()
+
+        templist = [(0 ,''),(0 ,''),(0 ,''),(0 ,''),(0 ,''),(0 ,''),(0 ,''),(0 ,''),(0 ,''),(0 ,'')]
+        sensor = W1ThermSensor()
+        currentidlist = []
+        #reference = [tray8,tray9,tray7,tray1,tray2,tray10,tray3,tray4,tray5,tray6]
+        error = 0
+        
+        while(1):
+            with open('sensorids.txt') as my_list_file:
+                idlist= literal_eval(my_list_file.read()) 
+            x=0
+            for sensor in W1ThermSensor.get_available_sensors():
+                #calibratedval = sensor.get_temperature() + reference[x]
+                calibratedval = calibrate(high[x],low[x],sensor.get_temperature())
+                templist.append((round(calibratedval,1), sensor.id))
+                res = [tuple for x in idlist for tuple in templist if tuple[1] == x]
+                x = x + 1
+                fake = [i for i ,j in res]
+                if len(fake) == 10:
+                    live = fake
+                fake = [0,0,0,0,0,0,0,0,0,0]
+            print("live : " , live)
+
+            for x in range(10):
+                mea = "temperature"
+                temperature = float(res[x][0]) #float(sensor.get_temperature())
+                series =[]
+                point = {
+                    "measurement": mea,
+                    "tags":{
+                        "location":("Tray "+str(x+1)),
+                        },
+                    "fields":{
+                        "temperature": round(temperature,1)
+                        }
+                    }
+                series.append(point)
+                write_api.write(bucket=bucket, org=org,record=series)
+            templist = [(0 ,''),(0 ,''),(0 ,''),(0 ,''),(0 ,''),(0 ,''),(0 ,''),(0 ,''),(0 ,''),(0 ,'')]
+            time.sleep(30)
+    except Exception as e:
+        print(e)
+        error = 1
+        error2 = error
+----------------------------------------------------------------------------------------------------------------------------------
+import RPi.GPIO as GPIO
+
+from time import sleep
+GPIO.setmode(GPIO.BOARD)
+GPIO.setwarnings(False)
+GPIO.setup(12, GPIO.OUT)
+#GPIO.setup(32, GPIO.OUT)
+pwm=GPIO.PWM(12, 50)
+#pwm1=GPIO.PWM(32, 50)
+pwm.start(0)
+#pwm1.start(0)
+
+def SetAngle(angle):
+	duty = angle / 18 + 2
+	GPIO.output(12, True)
+	#GPIO.output(32, True)
+	pwm.ChangeDutyCycle(duty-1)
+	pwm.ChangeDutyCycle(duty)
+	#pwm1.ChangeDutyCycle(duty)
+	sleep(1)
+	GPIO.output(12, False)
+	
+	sleep(2)
+	pwm.ChangeDutyCycle(0)
+	#GPIO.output(32, False)
+	
+	#pwm1.ChangeDutyCycle(0)
+
+def tilt():
+    SetAngle(150)
+        
+def untilt():
+    SetAngle(178)
+    SetAngle(180)
+
