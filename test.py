@@ -9,7 +9,7 @@ import os, signal
 from os import system
 import subprocess
 import testing
-from testing import live
+from testing import live, error2
 import trace
 import threading
 import servomotortest
@@ -20,12 +20,9 @@ class thread_with_trace(threading.Thread):
     self.killed = False
  
   def start(self):
-      try:
-          self.__run_backup = self.run
-          self.run = self.__run     
-          threading.Thread.start(self)
-      except SensorNotReadyError:
-          print("error")
+      self.__run_backup = self.run
+      self.run = self.__run     
+      threading.Thread.start(self)
  
   def __run(self):
     sys.settrace(self.globaltrace)
@@ -85,28 +82,25 @@ process = 0
 global switch
 switch = 0
 def Measure():
-    try:
-        global process
-        global liveprocess
-        process = thread_with_trace(target = testing.func)
-        liveprocess = thread_with_trace(target = live)
-        process.start()
-        liveprocess.start()
-        global switch
-        switch = 1
-        if switch == 1:
-            button1.place_forget()
-            button2.place(relx=0.32, rely=0.37, anchor=tkinter.CENTER)
-    except:
-        print("Something went wrong")
+    global process
+    global liveprocess
+    global errorhandle
+    process = thread_with_trace(target = testing.func)
+    liveprocess = thread_with_trace(target = live)
+    errorhandle = thread_with_trace(target = errorhandling)
+    process.start()
+    liveprocess.start()
+    errorhandle.start()
+    global switch
+    switch = 1
+    if switch == 1:
+        button1.place_forget()
+        button2.place(relx=0.32, rely=0.37, anchor=tkinter.CENTER)
         
 def StopMeasure():
-    #os.killpg(os.getpgid(process.pid), signal.SIGTERM)
     process.kill()
-    #liveprocess.kill()
-    process.join()
-    #liveprocess.join()
-    
+    liveprocess.kill()
+    errorhandle.kill()
     global switch
     switch = 0
     if switch == 0:
@@ -115,13 +109,39 @@ def StopMeasure():
         
     print("Measurement has been halted")
 
+def Measure2():
+    time.sleep(10)
+    global process
+    global liveprocess
+    global errorhandle
+    process = thread_with_trace(target = testing.func)
+    liveprocess = thread_with_trace(target = live)
+    process.start()
+    liveprocess.start()
+        
+def StopMeasure2():
+    process.kill()
+    liveprocess.kill()
+    print("Measurement has been halted")
+    
+def errorhandling():
+    while(1):
+        print(str(testing.error2))
+        if testing.error2 == 1:
+            print("error raised, restarting in 10 seconds")
+            time.sleep(10)
+            StopMeasure2()
+            Measure2()
+            testing.error2 = 0
+            print("restarted"+"\n")
+        else:
+            time.sleep(10)
+
 def live():
     while(1):
-        #time.sleep(5)
+        time.sleep(5)
         for i in range(10):
-                #print("this is", i)
             if testing.live[i] == 26.7 and len(testing.live) == 10:
-                #print("tray ", i+1, "at temperature : ",testing.live[i], ", is green")
                 globals()['temp%s'%str(i+1)].configure(fg_color=("green"),text = str(testing.live[i])+"°C")
                     
             elif testing.live[i] >= 26.8 and len(testing.live) == 10:
@@ -132,7 +152,7 @@ def live():
             
             else:
                 print("nothing changed")
-        #time.sleep(5)
+        time.sleep(5)
 
 global tilt
 tilt = 0
@@ -152,16 +172,17 @@ def Untilt():
         button4.place_forget()
         button3.place(relx=0.68, rely=0.37, anchor=tkinter.CENTER)
         
+def Shutdown():
+    os.system("sudo shutdown -h now")
+        
 def optionmenu(choice):
     if choice == "Temperature Reading":
-        #output = subprocess.check_output('python3', 'cloud.py', shell=True)
-        #live = ast.literal_eval(output.decode("ascii"))
-        #print(live)
         label1.place_forget()
         button1.place_forget()
         button2.place_forget()
         button3.place_forget()
         button4.place_forget()
+        button5.place_forget()
         lab1.place(relx=0.15, rely=0.01, anchor=tkinter.N)
         temp1.place(relx=0.30, rely=0.01, anchor=tkinter.N)
         lab2.place(relx=0.15, rely=0.15, anchor=tkinter.N)
@@ -183,6 +204,7 @@ def optionmenu(choice):
         lab10.place(relx=0.63, rely=0.60, anchor=tkinter.N)
         temp10.place(relx=0.78, rely=0.60, anchor=tkinter.N)
     else:
+        button5.place(relx=0.50, rely=0.6, anchor=tkinter.CENTER)
         label1.place(relx=0.5, rely=0.01, anchor=tkinter.N)
         lab1.place_forget()
         lab2.place_forget()
@@ -290,6 +312,18 @@ button4 = customtkinter.CTkButton(master=root,
                                  command=Untilt)
 #button2.place(relx=0.32, rely=0.37, anchor=tkinter.CENTER)
 
+#Shutdown Button
+button5 = customtkinter.CTkButton(master=root,
+                                 width=220,
+                                 height=90,
+                                 fg_color=("white", "light blue"),
+                                 border_width=2,
+                                 corner_radius=10,
+                                 text="Shut Down",
+                                 text_font=("Roboto Medium","24"),
+                                 text_color=("black"),
+                                 command=Shutdown)
+
 #OptionMenu for View between controls and Temperature
 optionmenu = customtkinter.CTkOptionMenu(master=root,
                                        width=300,
@@ -305,20 +339,3 @@ optionmenu.set("Controls")  # set initial value
 
 if __name__ == "__main__":
      root.mainloop()
-
-
-Exception in thread Thread-1:
-Traceback (most recent call last):
-  File "/usr/lib/python3.7/threading.py", line 917, in _bootstrap_inner
-    self.run()
-  File "/home/pi/Desktop/MP/tkintertest.py", line 32, in __run
-    self.__run_backup()
-  File "/usr/lib/python3.7/threading.py", line 865, in run
-    self._target(*self._args, **self._kwargs)
-  File "/home/pi/Desktop/MP/testing.py", line 77, in func
-    calibratedval = sensor.get_temperature() + reference[x]
-  File "/usr/local/lib/python3.7/dist-packages/w1thermsensor/core.py", line 267, in get_temperature
-    raw_temperature_line = self.get_raw_sensor_strings()[1]
-  File "/usr/local/lib/python3.7/dist-packages/w1thermsensor/core.py", line 250, in get_raw_sensor_strings
-    raise SensorNotReadyError(self)
-w1thermsensor.errors.SensorNotReadyError: Sensor 3c01f096fcdd is not yet ready to read temperature
