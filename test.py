@@ -431,32 +431,22 @@ def func():
         error2 = error
 ----------------------------------------------------------------------------------------------------------------------------------
 import RPi.GPIO as GPIO
-
 from time import sleep
 GPIO.setmode(GPIO.BOARD)
 GPIO.setwarnings(False)
 GPIO.setup(12, GPIO.OUT)
-#GPIO.setup(32, GPIO.OUT)
 pwm=GPIO.PWM(12, 50)
-#pwm1=GPIO.PWM(32, 50)
 pwm.start(0)
-#pwm1.start(0)
 
 def SetAngle(angle):
 	duty = angle / 18 + 2
 	GPIO.output(12, True)
-	#GPIO.output(32, True)
 	pwm.ChangeDutyCycle(duty-1)
 	pwm.ChangeDutyCycle(duty)
-	#pwm1.ChangeDutyCycle(duty)
 	sleep(1)
 	GPIO.output(12, False)
-	
 	sleep(2)
 	pwm.ChangeDutyCycle(0)
-	#GPIO.output(32, False)
-	
-	#pwm1.ChangeDutyCycle(0)
 
 def tilt():
     SetAngle(150)
